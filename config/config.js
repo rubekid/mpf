@@ -104,4 +104,18 @@ global.onerror = function (err) {
     catch(e){console.log(e)}
 };
 
+/**
+ * 钉钉推送
+ */
+global.dtalk = function (obj) {
+  try {
+    var body = {
+      title: '异常通知',
+      text: JSON.stringify(obj)
+    }
+    global.push(body, 'markdown');
+  }
+  catch (e) { console.log(e) }
+};
+
 module.exports = {}

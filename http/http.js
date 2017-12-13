@@ -51,22 +51,22 @@ var Http = {
   get: function () {
     var config = rebuild(arguments)
     config.method = METHOD_GET
-    Http.execute(config)
+    return Http.execute(config)
   },
   post: function () {
     var config = rebuild(arguments)
     config.method = METHOD_POST
-    Http.execute(config)
+    return Http.execute(config)
   },
   put: function () {
     var config = rebuild(arguments)
     config.method = METHOD_PUT
-    Http.execute(config)
+    return Http.execute(config)
   },
   delete: function () {
     var config = rebuild(arguments)
     config.method = METHOD_DELETE
-    Http.execute(config)
+    return Http.execute(config)
   },
   execute: function (config) {
     config.method = (config.method || config.type || METHOD_GET).toUpperCase()
@@ -84,29 +84,41 @@ var Http = {
      * 设置平台信息
      */
     config.header['Platform'] = 'mini_program';
-
+    
+    //合并参数
     Http.combine(config)
 
     // 设置授权头部
     var token = TokenManager.get();
     config.header['Authorization'] = AuthEncrypt.getMac(config.method, config.baseURL + decodeURIComponent(config.url), token)
 
+    //使用 Promise
+    // var usePromise = false;
+    // if ((Promise != undefined) && ((typeof config.success == 'undefined') && (typeof config.fail == 'undefined'))){
+    //   usePromise = true;
+    // }
     // 成功回调
     var successCallback = config.success || function (response, status, header, config) {}
 
     // 失败回调
-    var errorCallback = config.fail || config.error || function (response, status, header) {
+    var errorCallback = config.error || function (response) {
       if (config.ignore) {
         return
       }
-      if (status && status === 403) {
+      if (response.statusCode == 403) {
         global.login && global.login()
-        return
-      } else if (status && status === 503) {
+      }
+      else if (response.statusCode === 503) {
         global.sysLocked && global.sysLocked(response)
         return
-      }else if (response && response.message) {
-        global.showError(response.message)
+      }
+      else {
+        if (response && response.data && response.data.message) {
+          global.showError(response.data.message);
+        }
+        else {
+          global.showError('请求失败');
+        }
       }
     }
 
@@ -119,6 +131,7 @@ var Http = {
       }
     }
 
+    // 请求成功（服务器有响应）
     config.success = function (response) {
       if (response.statusCode == 200) {
         successCallback(response.data);
@@ -128,28 +141,35 @@ var Http = {
         }
       }
       else {
-        if (response.statusCode == 403) {
-          global.login();
-        }
-        else {
-          if (response && response.data && response.data.message){
-            global.showError(response.data.message);
-          }
-          else{
-            global.showError('请求失败');
-          }
-        }
-
+        errorCallback(response);
       }
     }
 
+    //请求失败 （服务器无响应）
     config.fail =  function (response) {
       global.showError('请求失败，请检查网络')
     }
     if (config.url.indexOf('http') !== 0) {
       config.url = config.baseURL + config.url;
     }
-    wx.request(config);
+
+    // if (usePromise){
+    //   return new Promise(( resolve, reject ) =>{
+    //     config.success = function (response) {
+    //       if (response.statusCode == 200) {
+    //         resolve(response.data);
+    //       }
+    //       else {
+    //         reject(response);
+    //       }
+    //     }
+    //     wx.request(config);
+    //   });
+    // }
+    // else{
+      wx.request(config);
+    //}
+
   },
   /**
    * 获取授权信息
