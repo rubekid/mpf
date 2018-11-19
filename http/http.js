@@ -17,7 +17,7 @@ var METHOD_DELETE = 'DELETE'
  * @type {Function}
  */
 function showError(message){
-  (global.showError || alert)(message)
+  (global.showError || global.alert)(message)
 }
 
 /**
@@ -51,22 +51,22 @@ var Http = {
   get: function () {
     var config = rebuild(arguments)
     config.method = METHOD_GET
-    return Http.execute(config)
+    Http.execute(config)
   },
   post: function () {
     var config = rebuild(arguments)
     config.method = METHOD_POST
-    return Http.execute(config)
+    Http.execute(config)
   },
   put: function () {
     var config = rebuild(arguments)
     config.method = METHOD_PUT
-    return Http.execute(config)
+    Http.execute(config)
   },
   delete: function () {
     var config = rebuild(arguments)
     config.method = METHOD_DELETE
-    return Http.execute(config)
+    Http.execute(config)
   },
   execute: function (config) {
     config.method = (config.method || config.type || METHOD_GET).toUpperCase()
@@ -84,41 +84,31 @@ var Http = {
      * 设置平台信息
      */
     config.header['Platform'] = 'mini_program';
-    
-    //合并参数
+    config.header['Custom'] = 'appId=' + global.APP_ID;
+
     Http.combine(config)
 
     // 设置授权头部
     var token = TokenManager.get();
     config.header['Authorization'] = AuthEncrypt.getMac(config.method, config.baseURL + decodeURIComponent(config.url), token)
 
-    //使用 Promise
-    // var usePromise = false;
-    // if ((Promise != undefined) && ((typeof config.success == 'undefined') && (typeof config.fail == 'undefined'))){
-    //   usePromise = true;
-    // }
     // 成功回调
     var successCallback = config.success || function (response, status, header, config) {}
 
     // 失败回调
-    var errorCallback = config.error || function (response) {
+    var errorCallback = config.fail || config.error || function (response, status, header) {
       if (config.ignore) {
         return
       }
-      if (response.statusCode == 403) {
-        global.login && global.login()
+      if (response && response.message) {
+        global.showError(response.message)
       }
-      else if (response.statusCode === 503) {
-        global.sysLocked && global.sysLocked(response)
-        return
-      }
-      else {
-        if (response && response.data && response.data.message) {
-          global.showError(response.data.message);
-        }
-        else {
-          global.showError('请求失败');
-        }
+    }
+
+    //请求完成回调
+    var completeCallback = config.complete || function (res) {
+      if(config.loading !== false){
+        global.hideLoading();
       }
     }
 
@@ -131,7 +121,6 @@ var Http = {
       }
     }
 
-    // 请求成功（服务器有响应）
     config.success = function (response) {
       if (response.statusCode == 200) {
         successCallback(response.data);
@@ -141,35 +130,39 @@ var Http = {
         }
       }
       else {
-        errorCallback(response);
+        if (response.statusCode == 403) {
+          global.login();
+        }
+        else {
+          if (response && response.data && response.data.message){
+            errorCallback(response.data, response.statusCode, response.header)
+          }
+          else{
+            global.showError('请求失败');
+          }
+        }
+
       }
     }
 
-    //请求失败 （服务器无响应）
     config.fail =  function (response) {
       global.showError('请求失败，请检查网络')
     }
+
+    config.complete = function(res){
+      completeCallback(res);
+    }
+
     if (config.url.indexOf('http') !== 0) {
       config.url = config.baseURL + config.url;
     }
-
-    // if (usePromise){
-    //   return new Promise(( resolve, reject ) =>{
-    //     config.success = function (response) {
-    //       if (response.statusCode == 200) {
-    //         resolve(response.data);
-    //       }
-    //       else {
-    //         reject(response);
-    //       }
-    //     }
-    //     wx.request(config);
-    //   });
+   
+    
+    // if (config.loading !== false) {
+    //   var text = config.loadingText|| '';
+    //   global.showLoading(text);
     // }
-    // else{
-      wx.request(config);
-    //}
-
+    wx.request(config);
   },
   /**
    * 获取授权信息

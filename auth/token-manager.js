@@ -62,9 +62,10 @@ var TokenManager = {
         } else if (remainTime < 10000) {
           needAutoLogin = true
         }
-      } else {
+      } 
+      /*else {
         needAutoLogin = true
-      }
+      }*/
       if(needAutoLogin){
         global.login();
       }

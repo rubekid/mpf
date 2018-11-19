@@ -38,13 +38,15 @@ AuthEncrypt.httpUrlFormat = function (urlOld, paramData, method) {
     for (var key in paramData) {
       var value = paramData[key]
       if (isArray(value)) {
-        var arrayValueCell = []
-        for (var keyCell in value) {
-          var valueCell = value[keyCell]
-          arrayValueCell.push(key + '=' + AuthEncrypt.encodeUriQuery(valueCell))
-        }
-        if (arrayValueCell.length > 0) {
-          urlArray.push(arrayValueCell.join('&'))
+        if (method.toUpperCase() === 'GET' || method.toUpperCase() === 'DELETE') {
+          var arrayValueCell = []
+          for (var keyCell in value) {
+            var valueCell = value[keyCell]
+            arrayValueCell.push(key + '=' + AuthEncrypt.encodeUriQuery(valueCell))
+          }
+          if (arrayValueCell.length > 0) {
+            urlArray.push(arrayValueCell.join('&'))
+          }
         }
       } else {
         if (urlOld.indexOf(':' + key, value) !== -1) {
