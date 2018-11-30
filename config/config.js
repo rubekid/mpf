@@ -1,7 +1,7 @@
 //APP ID
-global.APP_ID = "aa82324d98ff50c9"
+global.APP_ID = ""
 // 应用名称
-global.APP_NAME = "MALL"
+global.APP_NAME = ""
 
 // 应用标题
 global.APP_TITLE = "厦门爬虫科技有限公司"

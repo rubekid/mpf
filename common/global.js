@@ -1,6 +1,6 @@
 import { } from './../config/config.js'
 // API 基础路径
-global.API_DOMAIN = "https://server.xcx.xmappservice.com"
+global.API_DOMAIN = ""
 global.API_VERSION = "v1.0";
 global.API_BASE_PATH = global.API_DOMAIN + "/" + global.API_VERSION
 
