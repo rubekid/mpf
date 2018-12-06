@@ -96,6 +96,39 @@ global.hideLoading = function () {
 
 
 /**
+ * 获取权限并执行
+ */
+global.runWithAuth = (config) => {
+  var authScope = config.scope;
+  wx.getSetting({
+    success: (res) => {
+      if (res.authSetting[authScope]) {
+        config.success && config.success();
+      } else {
+        // global.toast('请勾选')
+        wx.openSetting({
+          success: (res) => {
+            if (res.authSetting[authScope]){
+              config.success && config.success();
+            }
+            else{
+              config.fail && config.fail();
+            }
+          },
+          fail: (err) => {
+            console.log(err);
+          }
+        })
+      }
+    },
+    fail: (err) => {
+      console.log(err);
+    }
+  });
+}
+
+
+/**
  * 推送消息
  * @param message multi
  * @param msgType String
