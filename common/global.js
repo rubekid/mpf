@@ -101,31 +101,38 @@ global.runWithAuth = (config) => {
   var authScope = config.scope;
   wx.getSetting({
     success: (res) => {
-      if (res.authSetting[authScope]) {
-        config.success && config.success();
-      } else {
+      var hasAuth = res.authSetting[authScope];
+      // 未申请授权
+      if (typeof hasAuth == 'undefined') {
         wx.authorize({
           scope: authScope,
           success() {
             config.success && config.success();
           },
-          fail(){
-            wx.openSetting({
-              success: (res) => {
-                if (res.authSetting[authScope]) {
-                  config.success && config.success();
-                }
-                else {
-                  config.fail && config.fail();
-                }
-              },
-              fail: (err) => {
-                console.log(err);
-              }
-            })
+          fail(err) {
+            console.log(err);
           }
         })
       }
+       // 拒绝授权
+      else if (!hasAuth){
+        wx.openSetting({
+          success: (res) => {
+            if (res.authSetting[authScope]) {
+              config.success && config.success();
+            }
+            else {
+              config.fail && config.fail();
+            }
+          },
+          fail: (err) => {
+            console.log(err);
+          }
+        })
+      }
+      else{
+        config.success && config.success();
+      } 
     },
     fail: (err) => {
       console.log(err);
