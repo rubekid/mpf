@@ -94,7 +94,6 @@ global.hideLoading = function () {
   wx.hideLoading();
 }
 
-
 /**
  * 获取权限并执行
  */
@@ -105,18 +104,25 @@ global.runWithAuth = (config) => {
       if (res.authSetting[authScope]) {
         config.success && config.success();
       } else {
-        // global.toast('请勾选')
-        wx.openSetting({
-          success: (res) => {
-            if (res.authSetting[authScope]){
-              config.success && config.success();
-            }
-            else{
-              config.fail && config.fail();
-            }
+        wx.authorize({
+          scope: authScope,
+          success() {
+            config.success && config.success();
           },
-          fail: (err) => {
-            console.log(err);
+          fail(){
+            wx.openSetting({
+              success: (res) => {
+                if (res.authSetting[authScope]) {
+                  config.success && config.success();
+                }
+                else {
+                  config.fail && config.fail();
+                }
+              },
+              fail: (err) => {
+                console.log(err);
+              }
+            })
           }
         })
       }
