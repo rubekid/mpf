@@ -51,24 +51,37 @@ var Http = {
   get: function () {
     var config = rebuild(arguments)
     config.method = METHOD_GET
-    Http.execute(config)
+    return Http.execute(config)
   },
   post: function () {
     var config = rebuild(arguments)
     config.method = METHOD_POST
-    Http.execute(config)
+    return Http.execute(config)
   },
   put: function () {
     var config = rebuild(arguments)
     config.method = METHOD_PUT
-    Http.execute(config)
+    return Http.execute(config)
   },
   delete: function () {
     var config = rebuild(arguments)
     config.method = METHOD_DELETE
-    Http.execute(config)
+    return Http.execute(config)
   },
   execute: function (config) {
+    // 使用Promise 处理成功
+    if (config.success == null) {
+      return new Promise(function (resolve, reject) {
+        config.success = function (res) {
+          resolve(res)
+        }
+        Http.doExecute(config)
+      })
+    } else {
+      return Http.doExecute(config)
+    }
+  },
+  doExecute: function (config) {
     config.method = (config.method || config.type || METHOD_GET).toUpperCase()
 
     // 设置头部

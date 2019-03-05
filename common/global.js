@@ -1,7 +1,5 @@
 import { } from './../config/config.js'
-// API 基础路径
-global.API_DOMAIN = ""
-global.API_VERSION = "v1.0";
+
 global.API_BASE_PATH = global.API_DOMAIN + "/" + global.API_VERSION
 
 
@@ -79,6 +77,19 @@ var loadingStatus = false;
 //loading
 global.showLoading = function (message) {
   loadingStatus = true;
+
+  // 使用自定义loading
+  var currentPage = global.getCurrentPage();
+  if (currentPage) {
+    var components = currentPage.data.components || {};
+    if (components.loading) {
+      currentPage.setData({
+        showLoading: true
+      })
+      return;
+    }
+  }
+
   wx.showLoading({
     title: message || ''
   });
@@ -91,55 +102,69 @@ global.hideLoading = function () {
     return;
   }
   loadingStatus = false;
+  // 使用自定义loading
+  var currentPage = global.getCurrentPage();
+  if (currentPage) {
+    var components = currentPage.data.components || {};
+    if (components.loading) {
+      setTimeout(() => {
+        currentPage.setData({
+          showLoading: false
+        })
+      }, 20)
+
+      return;
+    }
+  }
+
   wx.hideLoading();
 }
 
 /**
- * 获取权限并执行
+ *网络状态变更
  */
-global.runWithAuth = (config) => {
-  var authScope = config.scope;
-  wx.getSetting({
-    success: (res) => {
-      var hasAuth = res.authSetting[authScope];
-      // 未申请授权
-      if (typeof hasAuth == 'undefined') {
-        wx.authorize({
-          scope: authScope,
-          success() {
-            config.success && config.success();
-          },
-          fail(err) {
-            console.log(err);
-          }
-        })
-      }
-       // 拒绝授权
-      else if (!hasAuth){
-        wx.openSetting({
-          success: (res) => {
-            if (res.authSetting[authScope]) {
-              config.success && config.success();
-            }
-            else {
-              config.fail && config.fail();
-            }
-          },
-          fail: (err) => {
-            console.log(err);
-          }
-        })
-      }
-      else{
-        config.success && config.success();
-      } 
-    },
-    fail: (err) => {
-      console.log(err);
+global.onNetworkStatusChange = function (res) {
+  var status = res.isConnected;
+  var currentPage = global.getCurrentPage();
+  if (currentPage) {
+    var components = currentPage.data.components || {};
+    if (components.network) {
+      currentPage.setData({
+        networkStatus: status
+      })
+      return;
     }
-  });
+
+    if (currentPage.onNetworkStatusChange) {
+      currentPage.onNetworkStatusChange(res)
+    }
+  }
+};
+
+/**
+ * 获取当前页面对象
+ */
+global.getCurrentPage = function () {
+  var pages = getCurrentPages();
+  var len = pages.length;
+  var currentPage = null;
+  if (len > 0) {
+    currentPage = pages[len - 1];
+  }
+  return currentPage;
 }
 
+/**
+ * 获取当前页面组件
+ */
+global.getPageComponents = function () {
+  var currentPage = global.getCurrentPage();
+  var components = {};
+  if (currentPage) {
+    components = currentPage.data.components || {};
+  }
+  return components;
+}
 
 /**
  * 推送消息
@@ -186,33 +211,24 @@ global.onerror = function (err) {
 
 var lastLoginTime = 0;
 // 调用接口登录 需要在app.js中重写
-global.doLogin = (data) =>{};
+global.doLogin = (data) => { };
 
 //调用登录接口
-global.login = () =>{
+global.login = () => {
+
   var now = new Date().getTime();
-  if (now - lastLoginTime < 1000){
+  if (now - lastLoginTime < 1000) {
     console.log('重复登录请求')
-    return ;
+    return;
   }
   lastLoginTime = now;
-  wx.login({
-    loadingText: '授权登录',
-    success: (response) => {
-      var code = response.code;
-      wx.getUserInfo({
-        success: (res) => {
-          var data = {
-            "encrypted_data": res.encryptedData,
-            "iv": res.iv,
-            "code": code
-          };
-          global.doLogin(data)
-        }
-      })
-    }
+
+
+  wx.navigateTo({
+    url: '/pages/common/login'
   })
 }
+
 
 
 /**
@@ -227,6 +243,53 @@ global.dtalk = function (obj) {
     global.push(body, 'markdown');
   }
   catch (e) { console.log(e) }
+};
+
+
+/**
+ * 获取权限并执行
+ */
+global.runWithAuth = (config) => {
+  var authScope = config.scope;
+  wx.getSetting({
+    success: (res) => {
+      var hasAuth = res.authSetting[authScope];
+      // 未申请授权
+      if (typeof hasAuth == 'undefined') {
+        wx.authorize({
+          scope: authScope,
+          success() {
+            config.success && config.success();
+          },
+          fail(err) {
+            console.log(err);
+          }
+        })
+      }
+      // 拒绝授权
+      else if (!hasAuth) {
+        wx.openSetting({
+          success: (res) => {
+            if (res.authSetting[authScope]) {
+              config.success && config.success();
+            }
+            else {
+              config.fail && config.fail();
+            }
+          },
+          fail: (err) => {
+            console.log(err);
+          }
+        })
+      }
+      else {
+        config.success && config.success();
+      }
+    },
+    fail: (err) => {
+      console.log(err);
+    }
+  });
 };
 
 module.exports = {}

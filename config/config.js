@@ -1,5 +1,8 @@
-//APP ID
-global.APP_ID = ""
+// API 基础路径
+global.API_DOMAIN = ""
+//global.API_DOMAIN = "http://localhost"
+global.API_VERSION = "v1.0";
+
 // 应用名称
 global.APP_NAME = ""
 
