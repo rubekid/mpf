@@ -68,6 +68,12 @@ var Http = {
     config.method = METHOD_DELETE
     return Http.execute(config)
   },
+  upload: function(){
+    var config = rebuild(arguments)
+    config.method = METHOD_POST
+    Http.doUpload(config)  
+
+  },
   execute: function (config) {
     // 使用Promise 处理成功
     if (config.success == null) {
@@ -97,7 +103,6 @@ var Http = {
      * 设置平台信息
      */
     config.header['Platform'] = 'mini_program';
-    config.header['Custom'] = 'appId=' + global.APP_ID;
 
     Http.combine(config)
 
@@ -176,6 +181,78 @@ var Http = {
     //   global.showLoading(text);
     // }
     wx.request(config);
+  },
+  /**
+   * 执行上传
+   */
+  doUpload: function(config) {
+    // 设置头部
+    config.header = config.header || config.headers || {}
+    /**
+     * 设置平台信息
+     */
+    config.header['Platform'] = 'mini_program';
+
+    Http.combine(config)
+
+    // 设置授权头部
+    var token = TokenManager.get();
+    config.header['Authorization'] = AuthEncrypt.getMac(config.method, config.baseURL + decodeURIComponent(config.url), token)
+
+    // 成功回调
+    var successCallback = config.success || function (response, status, header, config) { }
+
+    // 失败回调
+    var errorCallback = config.fail || config.error || function (response, status, header) {
+      if (config.ignore) {
+        return
+      }
+      if (response && response.message) {
+        global.showError(response.message)
+      }
+    }
+
+    //请求完成回调
+    var completeCallback = config.complete || function (res) {
+      if (config.loading !== false) {
+        global.hideLoading();
+      }
+    }
+
+    config.success = function (response) {
+      if (response.statusCode == 200) {
+        successCallback(JSON.parse(response.data));
+      }
+      else {
+        if (response.statusCode == 403) {
+          global.login();
+        }
+        else {
+          if (response && response.data && response.data.message) {
+            errorCallback(response.data, response.statusCode, response.header)
+          }
+          else {
+            global.showError('请求失败');
+          }
+        }
+      }
+    }
+
+    config.fail = function (res) {
+      global.showError('请求失败，请检查网络或参数')
+    }
+
+    config.complete = function (res) {
+      completeCallback(res);
+    }
+    config.formData = config.formData || config.data;
+    delete config.data;
+
+    if (config.url.indexOf('http') !== 0) {
+      config.url = config.baseURL + config.url;
+    }
+    
+    wx.uploadFile(config);
   },
   /**
    * 获取授权信息
