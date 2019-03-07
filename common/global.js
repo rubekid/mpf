@@ -155,6 +155,34 @@ global.getCurrentPage = function () {
 }
 
 /**
+ * 获取返回页面对象
+ */
+global.getBackPage = function (delta) {
+  delta = delta || 0
+  var pages = getCurrentPages();
+  var len = pages.length;
+  var backPage = null;
+  if (len > delta + 1) {
+    backPage = pages[len - 2 - delta];
+  }
+  return backPage;
+}
+
+// 全局回调队列
+global.callbackQueue = {}
+global.navigateTo = function(config){
+  var callback = "onCallback" + new Date().getTime()
+  global.callbackQueue[callback] = function(res){
+    config.success && config.success(res);
+    global.callbackQueue[callback] = null
+    delete global.callbackQueue[callback]
+  }
+  wx.navigateTo({
+    url: config.url + (config.url.indexOf('?') > 0 ? '&' : '?') + 'callback=' + callback
+  })
+}
+
+/**
  * 获取当前页面组件
  */
 global.getPageComponents = function () {
